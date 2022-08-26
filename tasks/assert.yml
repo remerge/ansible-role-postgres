@@ -123,3 +123,43 @@
   when:
     - postgres_databases is defined
     - item.state is defined
+
+- name: test if postgres_conf is set correctly
+  ansible.builtin.assert:
+    that:
+      - postgres_conf is defined
+      - postgres_conf is iterable
+    quiet: yes
+
+- name: test if postgres_replica_application_name is set correctly
+  ansible.builtin.assert:
+    that:
+      - postgres_replica_application_name is defined
+      - postgres_replication == True
+    quiet: yes
+
+- name: test if postgres_replication is set correctly
+  ansible.builtin.assert:
+    that:
+      - postgres_replication is boolean
+    quiet: yes
+
+- name: test if is_postgres_master is set correctly
+  ansible.builtin.assert:
+    that:
+      - is_postgres_master is boolean
+    quiet: yes
+
+- name: test if postgres_replication_user is set correctly
+  ansible.builtin.assert:
+    that:
+      - postgres_replication_user is string
+      - postgres_replication == True
+    quiet: yes
+
+- name: test if postgres_replication_user_password is set correctly
+  ansible.builtin.assert:
+    that:
+      - postgres_replication_user_password is string
+      - postgres_replication == True
+    quiet: yes

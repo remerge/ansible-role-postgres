@@ -1,0 +1,63 @@
+- name: create postgres data directory
+  ansible.builtin.file:
+    path: "{{ postgres_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "700"
+
+- name: initialize database
+  ansible.builtin.command:
+    cmd: initdb -D {{ postgres_dir }}
+    creates: "{{ postgres_dir }}/PG_VERSION"
+  when:
+    - ansible_os_family != "Debian"
+  become_user: postgres
+  become: yes
+
+- name: set replication specific postgres_hba_entries
+  block:
+    - set_fact:
+        postgres_hba_replication_entries:
+          - type: host
+            database: replication
+            user: "{{ postgres_replication_user }}"
+            address: "{{ postgres_replica_addresses[0] }}/32"
+            method: trust
+          - type: host
+            database: all
+            user: "all"
+            address: "{{ postgres_replica_addresses[0] }}/32"
+            method: md5
+          - type: host
+            database: replication
+            user: "{{ postgres_replication_user }}"
+            address: "{{ postgres_replica_addresses[0] }}/32"
+            method: md5
+    - set_fact:
+        postgres_hba_entries: "{{ postgres_hba_entries + postgres_hba_replication_entries |  default([]) + _postgres_hba_entries  }}"
+
+- name: configure
+  ansible.builtin.import_tasks: configure.yml
+
+- name: start and enable postgres
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: set replication user
+  block:
+    - set_fact:
+        postgres_replication_user_details:
+          - name: "{{ postgres_replication_user }}"
+            password: "{{ postgres_replication_user_password }}"
+            port: "{{ postgres_port }}"
+            role_attr_flags: replication
+    - set_fact:
+        postgres_users: "{{ (postgres_users | default([])) + postgres_replication_user_details  }}"
+
+- name: create users and databases
+  ansible.builtin.import_tasks: ddl.yml
+  when:
+    - is_postgres_master == True

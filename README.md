@@ -46,6 +46,11 @@ The default values for the variables are set in `defaults/main.yml`:
 
 ```yaml
 ---
+postgres_replica_application_name:
+postgres_replication_user:
+postgres_replication_user_password:
+postgres_archive_path:
+
 # defaults file for postgres
 
 postgres_port: 5432
@@ -57,36 +62,12 @@ postgres_log_timezone: UTC
 postgres_datestyle: iso, ymd
 postgres_timezone: UTC
 postgres_default_text_search_config: pg_catalog.english
+postgres_replication: false
+is_postgres_master: false
 
-postgres_hba_entries:
-  - type: local
-    database: all
-    user: all
-    method: peer
-  - type: host
-    database: all
-    user: all
-    address: "127.0.0.1/32"
-    method: ident
-  - type: host
-    database: all
-    user: all
-    address: "::1/128"
-    method: ident
-  - type: local
-    database: replication
-    user: all
-    method: peer
-  - type: host
-    database: replication
-    user: all
-    address: "127.0.0.1/32"
-    method: ident
-  - type: host
-    database: replication
-    user: all
-    address: "::1/128"
-    method: ident
+postgres_conf: []
+postgres_hba_entries: []
+postgres_hba_replication_entries: []
 ```
 
 ## [Requirements](#requirements)

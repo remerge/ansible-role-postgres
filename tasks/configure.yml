@@ -1,0 +1,50 @@
+- name: create postgres archive data directory
+  ansible.builtin.file:
+    path: "{{ postgres_archive_path }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "700"
+  when:
+    - postgres_archive_path is defined
+
+- name: configure postgres
+  notify: restart postgres
+  block:
+    - name: set general postgres config values
+      ansible.builtin.lineinfile:
+        path: "{{ postgres_conf_dir }}/postgresql.conf"
+        regex: "^{{ item.name }} ="
+        line: "{{ item.name }} = '{{ item.value }}'"
+        create: yes
+        mode: "0644"
+      loop: "{{ postgres_conf | community.general.lists_mergeby(_base_postgres_conf, 'name') }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: set wal parameters
+      ansible.builtin.lineinfile:
+        path: "{{ postgres_conf_dir }}/postgresql.conf"
+        regex: "^{{ item.name }} ="
+        line: "{{ item.name }} = '{{ item.value }}'"
+        create: yes
+        mode: "0644"
+      loop:
+        - name: max_wal_size
+          value: "{{ postgres_max_wal_size }}"
+        - name: min_wal_size
+          value: "{{ postgres_min_wal_size }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - ansible_os_family not in [ "RedHat", "Rocky" ]
+        - ansible_distribution_major_version != "7"
+
+- name: create pg_hba.conf
+  ansible.builtin.template:
+    src: pg_hba.conf.j2
+    dest: "{{ postgres_conf_dir }}/pg_hba.conf"
+    backup: yes
+    mode: "0644"
+  notify:
+    - restart postgres

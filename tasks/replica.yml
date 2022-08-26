@@ -1,0 +1,52 @@
+- name: Stop PostgreSQL
+  service:
+    name: postgresql
+    state: stopped
+
+- name: Clear out data directory
+  file:
+    path: "{{ postgres_dir }}"
+    state: absent
+
+- name: Create empty data directory
+  file:
+    path: "{{ postgres_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0700'
+
+- name: Create base backup
+  command: pg_basebackup -X stream -D {{ postgres_dir }} -h {{ postgres_master_address }} -U {{ postgres_replication_user }}
+  become: yes
+  become_user: postgres
+
+- name: save password
+  copy:
+    content: "{{ postgres_master_address }}:*:*:{{ postgres_replication_user }}:{{ postgres_replication_user_password }}"
+    dest: "/var/lib/pgsql/.pgpass"
+    mode: '0600'
+  when:
+    - postgres_replication == True
+    - is_postgres_master == False
+
+- name: Create recovery.conf
+  template:
+    src: recovery.conf.j2
+    dest: "{{ postgres_conf_dir }}/recovery.conf"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+
+- name: set replication specific entries to postgres_hba_entries
+  set_fact:
+    postgres_hba_entries: "{{ postgres_hba_entries  + _postgres_hba_entries  }}"
+
+- name: configure
+  ansible.builtin.import_tasks: configure.yml
+
+- name: start and enable postgres
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+    enabled: yes

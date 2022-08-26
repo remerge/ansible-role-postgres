@@ -35,3 +35,49 @@ _postgres_socket_directory:
   Alpine: /run/postgresql
 
 postgres_socket_directory: "{{ _postgres_socket_directory[ansible_os_family] | default(_postgres_socket_directory['default'] ) }}"
+
+_base_postgres_conf:
+  - name: port
+    value: "{{ postgres_port }}"
+  - name: listen_addresses
+    value: "{{ postgres_listen_addresses }}"
+  - name: unix_socket_directories
+    value: "{{ postgres_unix_socket_directories }}"
+  - name: log_timezone
+    value: "{{ postgres_log_timezone }}"
+  - name: datestyle
+    value: "{{ postgres_datestyle }}"
+  - name: timezone
+    value: "{{ postgres_timezone }}"
+  - name: default_text_search_config
+    value: "{{ postgres_default_text_search_config }}"
+
+_postgres_hba_entries:
+  - type: local
+    database: all
+    user: all
+    method: peer
+  - type: host
+    database: all
+    user: all
+    address: "0.0.0.0/32"
+    method: ident
+  - type: host
+    database: all
+    user: all
+    address: "::1/128"
+    method: ident
+  - type: local
+    database: replication
+    user: all
+    method: peer
+  - type: host
+    database: replication
+    user: all
+    address: "0.0.0.0/32"
+    method: ident
+  - type: host
+    database: replication
+    user: all
+    address: "::1/128"
+    method: ident
